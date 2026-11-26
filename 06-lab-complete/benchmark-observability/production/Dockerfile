@@ -27,6 +27,9 @@ USER agent
 
 ENV PATH=/home/agent/.local/bin:$PATH
 ENV PYTHONPATH=/app
+# Fix: user "agent" có home=/app nên user-site mặc định là /app/.local → không thấy package
+# đã copy sang /home/agent/.local (ModuleNotFoundError: uvicorn). Chỉ rõ PYTHONUSERBASE.
+ENV PYTHONUSERBASE=/home/agent/.local
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
