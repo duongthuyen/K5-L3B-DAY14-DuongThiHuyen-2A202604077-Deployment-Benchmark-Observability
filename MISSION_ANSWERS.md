@@ -189,6 +189,10 @@ Theo CHECKPOINTS (CP6), lớp K5 deploy chính agent Part 6 (`06-lab-complete/`)
   Theo RULES.md (không nhập thẻ thanh toán), mình chuyển sang Render.
 - **Render (nền tảng chính):** Blueprint `06-lab-complete/render.yaml` gồm web service Docker `day14-agent` + Key Value (Redis) `day14-redis`; `REDIS_URL` lấy từ `fromService ... property: connectionString`, `AGENT_API_KEY` dùng `sync: false` (nhập trên dashboard). Kết quả: xem [DEPLOYMENT.md](DEPLOYMENT.md).
 
+- **URL public:** https://day14-agent-scke.onrender.com
+- **4 lệnh tự kiểm CP6:** `/health` → **200**, `/ready` → **200**, `/ask` không key → **401**, `/ask` có key → **200**. Thêm: 12 request liên tiếp → `200 ×8, 429 ×4`, header `retry-after: 54`; `check_production_ready.py --public-url` → ✅ `GET .../health → 200`.
+- **Screenshot:** [dashboard](screenshots/dashboard.png) · [running](screenshots/running.png) · [test](screenshots/test.png)
+
 ### So sánh `railway.toml` và `render.yaml`
 
 | Khía cạnh | `railway.toml` | `render.yaml` |
