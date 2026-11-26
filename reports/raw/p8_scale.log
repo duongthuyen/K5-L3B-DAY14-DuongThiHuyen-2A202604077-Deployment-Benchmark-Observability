@@ -1,0 +1,116 @@
+ Network k5-day14-observability_obs_net Removed 
+$ docker compose -p k5-day14-observability up -d --build --scale agent=1
+ Container k5-day14-observability-nginx-1 Starting 
+ Container k5-day14-observability-nginx-1 Started 
+ Container k5-day14-observability-locust-1 Starting 
+ Container k5-day14-observability-locust-1 Started 
+NAME                                  STATUS                    PORTS
+k5-day14-observability-agent-1        Up 26 seconds (healthy)   8000/tcp
+k5-day14-observability-grafana-1      Up 26 seconds             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+k5-day14-observability-jaeger-1       Up 27 seconds             0.0.0.0:4318->4318/tcp, [::]:4318->4318/tcp, 0.0.0.0:16686->16686/tcp, [::]:16686->16686/tcp
+k5-day14-observability-locust-1       Up 25 seconds             0.0.0.0:8089->8089/tcp, [::]:8089->8089/tcp
+k5-day14-observability-nginx-1        Up 25 seconds             0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+k5-day14-observability-prometheus-1   Up 27 seconds             0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+$ curl -i -X POST http://localhost:8080/ask (smoke test)
+HTTP/1.1 200 OK
+Server: nginx/1.28.3
+Date: Thu, 26 Nov 2026 08:09:24 GMT
+Content-Type: application/json
+Content-Length: 449
+Connection: keep-alive
+x-request-id: e2962e23dd46
+x-trace-id: 323637d60ac6dfcc115f1344daeb2cec
+X-Served-By: 172.19.0.5:8000
+
+{"answer":"Distributed tracing ghi lại một request đi qua những bước nào. Mỗi bước là một span có thời gian bắt đầu, kết thúc và attributes. OpenTelemetry thu thập trace và gửi tới Jaeger để xem.","model":"mock-llm-small","agent_version":"v2","usage":{"input_tokens":81,"output_tokens":46,"cost_usd":3.975e-05},"llm_latency_ms":183.7,"request_id":"e2962e23dd46","trace_id":"323637d60ac6dfcc115f1344daeb2cec"}
+$ curl -i http://localhost:8080/metrics
+HTTP/1.1 404 Not Found
+Server: nginx/1.28.3
+Date: Thu, 26 Nov 2026 08:09:24 GMT
+Content-Type: text/html
+Content-Length: 153
+Connection: keep-alive
+
+<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx/1.28.3</center>
+
+=== promtool test rules
+Processing test file: /p/alert_rules_test.yml
+  SUCCESS
+
+agents truoc scale_1: 1
+=== scale_1 (100 users, 2m)
+
+[2026-11-26 08:11:31,662] 9b45ec5b1d74/INFO/locust.main: --run-time limit reached, shutting down
+[2026-11-26 08:11:31,712] 9b45ec5b1d74/INFO/locust.main: Shutting down (exit code 1)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+POST     /ask                                                                            6983    63(0.90%) |    279      93    2255    200 |   56.66        0.51
+GET      /health                                                                          705     0(0.00%) |     26       1     734      6 |    5.72        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                      7688    63(0.82%) |    256       1    2255    200 |   62.38        0.51
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+POST     /ask                                                                                  200    220    220    240    390    680   1700   1700   2000   2300   2300   6983
+GET      /health                                                                                 6      7      9     11     49    170    320    370    730    730    730    705
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            200    210    220    230    360    640   1700   1700   1900   2300   2300   7688
+
+Error report
+# occurrences      Error                                                                                               
+------------------|---------------------------------------------------------------------------------------------------------------------------------------------
+63                 POST /ask: HTTPError('503 Server Error: Service Unavailable for url: /ask')                         
+------------------|---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+agents sau scale_1: 1
+$ docker compose -p k5-day14-observability up -d --scale agent=3
+ Container k5-day14-observability-agent-2 Started 
+ Container k5-day14-observability-agent-3 Starting 
+ Container k5-day14-observability-agent-3 Started 
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"up","instance":"172.19.0.5:8000","job":"agent"},"value":[1795680719.582,"1"]},{"metric":{"__name__":"up","instance":"172.19.0.9:8000","job":"agent"},"value":[1795680719.582,"1"]},{"metric":{"__name__":"up","instance":"172.19.0.8:8000","job":"agent"},"value":[1795680719.582,"1"]}]}}
+agents truoc scale_3: 3
+=== scale_3 (100 users, 2m)
+
+[2026-11-26 08:14:05,518] 2fc8b0fbd1bd/INFO/locust.main: --run-time limit reached, shutting down
+[2026-11-26 08:14:05,570] 2fc8b0fbd1bd/INFO/locust.main: Shutting down (exit code 1)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+POST     /ask                                                                            7142    63(0.88%) |    234      93    1894    200 |   57.40        0.51
+GET      /health                                                                          746     0(0.00%) |      6       2     194      5 |    6.00        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                      7888    63(0.80%) |    213       2    1894    190 |   63.39        0.51
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+POST     /ask                                                                                  200    210    210    220    220    240   1700   1700   1800   1900   1900   7142
+GET      /health                                                                                 5      6      6      7      9     12     27     49    190    190    190    746
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            190    210    210    220    220    240   1700   1700   1800   1900   1900   7888
+
+Error report
+# occurrences      Error                                                                                               
+------------------|---------------------------------------------------------------------------------------------------------------------------------------------
+63                 POST /ask: HTTPError('503 Server Error: Service Unavailable for url: /ask')                         
+------------------|---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+agents sau scale_3: 3
+total 56
+drwxrwxrwx 1 root root  4096 Nov 26 15:12 .
+drwxrwxrwx 1 root root  4096 Nov 26 15:06 ..
+-rwxrwxrwx 1 root root     0 Nov 26 14:12 .gitkeep
+-rwxrwxrwx 1 root root    31 Nov 26 15:11 scale_1_exceptions.csv
+-rwxrwxrwx 1 root root   173 Nov 26 15:11 scale_1_failures.csv
+-rwxrwxrwx 1 root root   718 Nov 26 15:11 scale_1_stats.csv
+-rwxrwxrwx 1 root root 21788 Nov 26 15:11 scale_1_stats_history.csv
+-rwxrwxrwx 1 root root    31 Nov 26 15:14 scale_3_exceptions.csv
+-rwxrwxrwx 1 root root   173 Nov 26 15:14 scale_3_failures.csv
+-rwxrwxrwx 1 root root   714 Nov 26 15:14 scale_3_stats.csv
+-rwxrwxrwx 1 root root 21832 Nov 26 15:14 scale_3_stats_history.csv

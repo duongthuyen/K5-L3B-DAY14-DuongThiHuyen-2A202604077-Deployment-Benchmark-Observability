@@ -1,0 +1,16 @@
+=== Thi nghiem A+B (lan 2, de chup anh): MOCK_ERROR_RATE=0.2 + MOCK_SLOW_RATE=0.3
+doi cau hinh luc 15:45:19
+ Container k5-day14-observability-agent-2 Started 
+  [   7.4s] 15:45:26 AgentInstanceDown -> pending
+  [  27.4s] 15:45:46 AgentHighLatencyP95 -> pending
+  [  33.7s] 15:45:52 AgentHighErrorRate -> pending
+  [  96.3s] 15:46:55 AgentHighErrorRate -> firing
+  [ 147.6s] 15:47:46 AgentHighLatencyP95 -> firing
+  ALL_FIRING {"AgentHighErrorRate": 96.3, "AgentHighLatencyP95": 147.6}
+error rate: value = 0.23189
+p95 (s): value = 1.89881
+avg (s): value = 0.59324
+[('AgentHighErrorRate', 'firing', '2026-11-26T08:45:47.401817116Z'), ('AgentHighLatencyP95', 'firing', '2026-11-26T08:45:42.401817116Z')]
+saved C:\Users\Admin\Downloads\ai20k\code\lab\K5-L3B-DAY14-DuongThiHuyen-2A202604077-Deployment-Benchmark-Observability\screenshots\prometheus-alert-firing.png
+ Container k5-day14-observability-agent-2 Started 
+DONE

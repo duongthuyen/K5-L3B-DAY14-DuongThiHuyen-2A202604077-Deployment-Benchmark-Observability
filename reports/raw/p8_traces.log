@@ -1,0 +1,20 @@
+=== Exercise 7.5 traces (15:41:13)
+SLOW 18f1e5f86ab6d7629b50759894717287 3059.7 ms (trong 1995 trace POST /ask)
+  span POST /ask                    3059.7 ms 100.0%  {}
+  span agent.run                    3055.8 ms  99.9%  {}
+  span chat mock-llm-small          3039.8 ms  99.4%  {"gen_ai.operation.name": "chat", "gen_ai.provider.name": "mock", "gen_ai.request.model": "mock-llm-small", "gen_ai.usage.input_tokens": "79", "gen_ai.usage.output_tokens": "41"}
+  span agent.retrieve_context         15.7 ms   0.5%  {"retrieval.documents": "1"}
+ERRCOUNT 14
+ERR 238e2774495620f7ec4ae2705ae9c429 93.2 ms
+  errspan chat mock-llm-small 71.3 ms status='LLMError: Upstream LLM error: 503 Service Unavailable (mock)' events=[{"name": "exception", "exception.escaped": "False", "exception.message": "Upstream LLM error: 503 Service Unavailable (mock)", "exception.stacktrace": "Traceback (most recent call last):\n  File \"/app/app/main.py\", line 153, in run_agent\n    result = await mock_llm.generate(question, context=con
+  errspan agent.run 90.4 ms status='LLMError: Upstream LLM error: 503 Service Unavailable (mock)' events=[{"name": "exception", "exception.escaped": "False", "exception.message": "Upstream LLM error: 503 Service Unavailable (mock)", "exception.stacktrace": "Traceback (most recent call last):\n  File \"/home/agent/.local/lib/python3.11/site-packages/opentelemetry/trace/__init__.py\", line 602, in use_sp
+  errspan POST /ask 93.2 ms status='' events=[]
+--- log JSON co trace_id cua trace cham (18f1e5f86ab6d7629b50759894717287):
+{"ts": "2026-11-26T08:39:40.021673+00:00", "level": "INFO", "service": "observable-agent", "instance": "32cfab136dd9", "event": "llm_call", "trace_id": "18f1e5f86ab6d7629b50759894717287", "span_id": "13c6e3587d7e45f3", "request_id": "4585f326e9da", "model": "mock-llm-small", "agent_version": "v2", "input_tokens": 79, "output_tokens": 41, "cost_usd": 3.6e-05, "llm_ms": 1683.4}
+{"ts": "2026-11-26T08:39:40.022541+00:00", "level": "INFO", "service": "observable-agent", "instance": "32cfab136dd9", "event": "http_request", "trace_id": "18f1e5f86ab6d7629b50759894717287", "span_id": "13c6e3587d7e45f3", "request_id": "4585f326e9da", "method": "POST", "route": "/ask", "status": 200, "ms": 1702.9}
+--- log JSON co trace_id cua trace loi (238e2774495620f7ec4ae2705ae9c429):
+{"ts": "2026-11-26T08:39:22.879301+00:00", "level": "INFO", "service": "observable-agent", "instance": "32cfab136dd9", "event": "llm_error", "trace_id": "238e2774495620f7ec4ae2705ae9c429", "span_id": "e37ca6c1d1a28d11", "request_id": "dff853b06ec5", "error": "Upstream LLM error: 503 Service Unavailable (mock)"}
+{"ts": "2026-11-26T08:39:22.879766+00:00", "level": "INFO", "service": "observable-agent", "instance": "32cfab136dd9", "event": "http_request", "trace_id": "238e2774495620f7ec4ae2705ae9c429", "span_id": "e37ca6c1d1a28d11", "request_id": "dff853b06ec5", "method": "POST", "route": "/ask", "status": 503, "ms": 92.3}
+saved C:\Users\Admin\Downloads\ai20k\code\lab\K5-L3B-DAY14-DuongThiHuyen-2A202604077-Deployment-Benchmark-Observability\screenshots\jaeger-slow-trace.png
+saved C:\Users\Admin\Downloads\ai20k\code\lab\K5-L3B-DAY14-DuongThiHuyen-2A202604077-Deployment-Benchmark-Observability\screenshots\jaeger-error-trace.png
+DONE

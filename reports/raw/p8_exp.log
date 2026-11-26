@@ -1,0 +1,112 @@
+=== baseline: agent=2, tai nen 30 users (15:14:32)
+ Container k5-day14-observability-agent-3 Removing 
+ Container k5-day14-observability-agent-3 Removed 
+ 
+ Container k5-locust-bg Created 
+--- Exercise 7.4 PromQL (15:17:09)
+p95 /ask (s): value = 0.29124
+avg /ask (s): value = 0.22118
+p99 /ask (s): value = 1.74763
+req/s theo instance: instance=172.19.0.5:8000 = 9.41167; instance=172.19.0.8:8000 = 9.31386
+error rate: value = 0.01043
+tokens/s theo type: type=input = 1459.65428; type=output = 771.30059
+cost USD/gio: value = 4.2202
+up: __name__=up,instance=172.19.0.5:8000,job=agent = 1.0; __name__=up,instance=172.19.0.8:8000,job=agent = 1.0
+$ curl -i http://localhost:8080/metrics
+HTTP/1.1 404 Not Found
+Server: nginx/1.28.3
+Date: Thu, 26 Nov 2026 08:17:09 GMT
+alerts luc baseline: [('LLMCostBurnRateHigh', 'firing')]
+saved C:\Users\Admin\Downloads\ai20k\code\lab\K5-L3B-DAY14-DuongThiHuyen-2A202604077-Deployment-Benchmark-Observability\screenshots\grafana-dashboard.png
+=== Exercise 7.5 traces
+Traceback (most recent call last):
+  File "/mnt/c/Users/Admin/AppData/Local/Temp/claude/39c3371a240084f0/639b9e76-bc5c-4a35-8a55-22c9fd783d67/scratchpad/t
+races.py", line 19, in <module>
+    traces = get({"service": "observable-agent", "lookback": "10m", "limit": 1500, "operation": "POST /ask"})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/Admin/AppData/Local/Temp/claude/39c3371a240084f0/639b9e76-bc5c-4a35-8a55-22c9fd783d67/scratchpad/t
+races.py", line 9, in get
+    return json.load(urllib.request.urlopen(url, timeout=30))["data"]
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found
+--- log JSON co trace_id cua trace cham ():
+{"event":"tracing_enabled","endpoint":"http://jaeger:4318"}
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+--- log JSON co trace_id cua trace loi ():
+{"event":"tracing_enabled","endpoint":"http://jaeger:4318"}
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+--- docker compose logs agent | grep llm_error | head -1:
+{"ts": "2026-11-26T08:09:35.295516+00:00", "level": "INFO", "service": "observable-agent", "instance": "e7c166716a14", "event": "llm_error", "trace_id": "87f47a7a1f57f2ec67990f2e21287759", "span_id": "2e3ab9644d3922cb", "request_id": "f54f3e7229d5", "error": "Upstream LLM error: 503 Service Unavailable (mock)"}
+
+
+=== Thi nghiem A+B: MOCK_ERROR_RATE=0.2 + MOCK_SLOW_RATE=0.3
+doi cau hinh luc 15:18:36
+ Container k5-day14-observability-agent-2 Started 
+  [   2.1s] 15:18:38 LLMCostBurnRateHigh -> firing
+  [   7.2s] 15:18:43 AgentInstanceDown -> pending
+  [  28.5s] 15:19:04 AgentHighErrorRate -> pending
+  [  28.5s] 15:19:04 AgentHighLatencyP95 -> pending
+  [  43.5s] 15:19:19 LLMCostBurnRateHigh -> pending
+  [  91.2s] 15:20:07 AgentHighErrorRate -> firing
+  [ 147.6s] 15:21:03 AgentHighLatencyP95 -> firing
+  ALL_FIRING {"AgentHighErrorRate": 91.2, "AgentHighLatencyP95": 147.6}
+error rate: value = 0.17305
+p95 (s): value = 1.89368
+p99 (s): value = 1.97874
+avg (s): value = 0.57244
+alerts: [('AgentHighErrorRate', 'firing'), ('AgentHighLatencyP95', 'firing')]
+
+saved C:\Users\Admin\AppData\Local\Temp\claude\39c3371a240084f0\639b9e76-bc5c-4a35-8a55-22c9fd783d67\scratchpad\grafana-during-AB.png
+=== khoi phuc (15:21:48)
+ Container k5-day14-observability-agent-2 Started 
+alerts sau khoi phuc: []
+=== Thi nghiem D: docker pause 1 instance
+docker pause k5-day14-observability-agent-1 luc 15:24:27
+  [  11.5s] 15:24:38 AgentInstanceDown -> pending
+  [  42.8s] 15:25:10 AgentInstanceDown -> firing
+  ALL_FIRING {"AgentInstanceDown": 42.8}
+up: __name__=up,instance=172.19.0.5:8000,job=agent = 0.0; __name__=up,instance=172.19.0.8:8000,job=agent = 1.0
+error rate (metric cua agent): value = 0.01096
+unpause k5-day14-observability-agent-1
+=== Thi nghiem C: LLM_MODEL=mock-llm-large
+cost USD/gio truoc: value = 2.05514
+doi cau hinh luc 15:26:11
+ Container k5-day14-observability-agent-2 Started 
+  [   4.4s] 15:26:16 LLMCostBurnRateHigh -> pending
+  [   9.4s] 15:26:21 AgentInstanceDown -> pending
+  [ 144.5s] 15:28:36 LLMCostBurnRateHigh -> firing
+  ALL_FIRING {"LLMCostBurnRateHigh": 144.5}
+cost USD/gio sau: value = 19.17982
+p95 (s): value = 0.70513
+=== Thi nghiem E: AGENT_VERSION=v1
+doi cau hinh luc 15:29:07
+ Container k5-day14-observability-agent-2 Started 
+  [   3.2s] 15:29:10 LLMCostBurnRateHigh -> firing
+  [  13.2s] 15:29:20 AgentInstanceDown -> pending
+  TIMEOUT
+tokens/s theo type: type=input = 648.2927; type=output = 353.99518
+agent_info: __name__=agent_info,instance=172.19.0.5:8000,job=agent,model=mock-llm-small,version=v1 = 1.0; __name__=agent_info,instance=172.19.0.8:8000,job=agent,model=mock-llm-small,version=v1 = 1.0
+error rate: value = 0.00788
+p95 (s): value = 0.19928
+alerts: [('LLMCostBurnRateHigh', 'firing')]
+ Container k5-day14-observability-agent-2 Started 
+=== DONE (15:32:15)

@@ -1,0 +1,192 @@
+=== Exercise 7.2 concurrency (rerun, may ranh)
+--- concurrency 1
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=1)
+  Duration     : 73.55 s
+  Throughput   : 4.08 req/s
+  Error rate   : 1.00%   {'200': 297, '503': 3}
+  Total cost   : $0.010075
+  Latency (ms) : min=157.1  avg=246.5  max=1725.6
+                 p50=191.5  p90=217.7  p95=221.0  p99=1714.9
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ✅ PASS
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_c1.json
+--- concurrency 10
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=10)
+  Duration     : 7.44 s
+  Throughput   : 40.33 req/s
+  Error rate   : 0.33%   {'200': 299, '503': 1}
+  Total cost   : $0.010145
+  Latency (ms) : min=155.1  avg=220.0  max=1713.9
+                 p50=189.3  p90=218.6  p95=221.8  p99=1680.1
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ✅ PASS
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_c10.json
+--- concurrency 50
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=50)
+  Duration     : 2.91 s
+  Throughput   : 103.01 req/s
+  Error rate   : 0.67%   {'200': 298, '503': 2}
+  Total cost   : $0.010102
+  Latency (ms) : min=152.4  avg=280.6  max=1722.8
+                 p50=204.5  p90=257.4  p95=506.6  p99=1709.4
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ❌ FAIL
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_c50.json
+--- concurrency 100
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=100)
+  Duration     : 5.15 s
+  Throughput   : 58.28 req/s
+  Error rate   : 0.67%   {'200': 298, '503': 2}
+  Total cost   : $0.009804
+  Latency (ms) : min=192.3  avg=1046.2  max=3510.4
+                 p50=390.6  p90=2722.8  p95=3113.4  p99=3277.6
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ❌ FAIL
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_c100.json
+=== Exercise 7.2 MOCK_SLOW_RATE (rerun)
+--- MOCK_SLOW_RATE=0
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=20)
+  Duration     : 3.02 s
+  Throughput   : 99.48 req/s
+  Error rate   : 1.67%   {'503': 5, '200': 295}
+  Total cost   : $0.01009
+  Latency (ms) : min=155.2  avg=193.3  max=240.4
+                 p50=192.8  p90=216.0  p95=218.8  p99=235.0
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ✅ PASS
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_slow_0.json
+--- MOCK_SLOW_RATE=0.03
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=20)
+  Duration     : 5.13 s
+  Throughput   : 58.43 req/s
+  Error rate   : 0.67%   {'200': 298, '503': 2}
+  Total cost   : $0.009933
+  Latency (ms) : min=155.6  avg=252.6  max=1713.0
+                 p50=194.0  p90=221.0  p95=237.2  p99=1704.7
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ✅ PASS
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_slow_0.03.json
+--- MOCK_SLOW_RATE=0.1
+
+════════════════════════════════════════════════════════
+  LOAD TEST REPORT — http://localhost:8002
+════════════════════════════════════════════════════════
+  Requests     : 300  (concurrency=20)
+  Duration     : 5.7 s
+  Throughput   : 52.64 req/s
+  Error rate   : 0.00%   {'200': 300}
+  Total cost   : $0.010278
+  Latency (ms) : min=154.5  avg=301.4  max=1721.2
+                 p50=192.8  p90=224.5  p95=1680.7  p99=1706.3
+────────────────────────────────────────────────────────
+  SLO p95 ≤ 500ms        : ❌ FAIL
+  SLO error rate ≤ 2.0%  : ✅ PASS
+════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/load_v2_slow_0.1.json
+=== Exercise 7.3 eval cuoi (sau khi sua KNOWLEDGE_BASE)
+
+🧪 Eval agent tại http://localhost:8002
+
+  ✅ basic-01         score=1.00    167.6ms
+  ✅ docker-01        score=1.00    202.0ms
+  ✅ docker-02        score=1.00    212.9ms
+  ✅ probe-01         score=1.00    172.1ms
+  ✅ probe-02         score=1.00    161.1ms
+  ✅ reliability-01   score=1.00    207.3ms
+  ✅ config-01        score=1.00    190.1ms
+  ✅ security-01      score=1.00    177.3ms
+  ✅ security-02      score=1.00    201.4ms
+  ✅ scaling-01       score=1.00    193.7ms
+  ✅ scaling-02       score=1.00    164.0ms
+  ✅ scaling-03       score=1.00    188.3ms
+  ✅ bench-01         score=1.00    170.4ms
+  ✅ bench-02         score=1.00    216.7ms
+  ✅ obs-01           score=1.00    206.9ms
+  ✅ obs-02           score=1.00    175.9ms
+  ✅ obs-03           score=1.00    192.2ms
+  ✅ obs-04           score=1.00    171.3ms
+  ✅ obs-05           score=1.00    168.9ms
+  ✅ obs-06           score=1.00    214.1ms
+  ✅ slo-01           score=1.00    170.0ms
+  ✅ cost-01          score=1.00    174.8ms
+  ✅ cloud-01         score=1.00    163.8ms
+
+══════════════════════════════════════════════════════════
+  EVAL REPORT — agent v2
+══════════════════════════════════════════════════════════
+  Accuracy      : 100.0%  (23/23)
+  Errors        : 0
+  Latency (ms)  : p50=177.3  p95=214.0
+  Avg tokens    : 116.6
+  Total cost    : $0.000816   (cost / câu đúng: $0.00003547)
+  Theo category :
+    - benchmark      3/3  (100%)
+    - cost           1/1  (100%)
+    - deployment     3/3  (100%)
+    - docker         2/2  (100%)
+    - observability  6/6  (100%)
+    - reliability    3/3  (100%)
+    - scaling        3/3  (100%)
+    - security       2/2  (100%)
+
+  📊 So sánh với baseline (agent v2)
+  Chỉ số                    Baseline    Hiện tại        Thay đổi
+  Accuracy                     91.3%      100.0%     +8.7 điểm %
+  Latency p95 (ms)            1556.6       214.0         -1342.6
+  Avg tokens / câu             109.3       116.6            +7.3
+  Tổng cost (USD)           0.000764    0.000816       +0.000052
+
+  ✨ Câu được cải thiện : 2
+  ⚠️  Câu bị regression : 0 
+──────────────────────────────────────────────────────────
+  Quality gate (accuracy ≥ 100%, không regression): ✅ PASS
+══════════════════════════════════════════════════════════
+
+💾 Đã lưu report: reports/eval_v2_fixed.json
+exit code: 0
+=== CI gate demo: v1 voi --min-accuracy 0.85
+exit code v1 gate: 1
+  Quality gate (accuracy ≥ 85%, không regression): ❌ FAIL

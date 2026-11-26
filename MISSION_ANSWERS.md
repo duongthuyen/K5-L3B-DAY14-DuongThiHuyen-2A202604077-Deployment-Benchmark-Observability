@@ -176,7 +176,41 @@ Header `Server: nginx` và các security header chứng tỏ request đi qua Ngi
 
 ## Part 3: Cloud Deployment
 
-_(Điền sau CP6 — xem bên dưới mục "Part 3")_
+Theo CHECKPOINTS (CP6), lớp K5 deploy chính agent Part 6 (`06-lab-complete/`), không deploy app mẫu `03-cloud-deployment/`.
+
+### Exercise 3.1 / 3.2: Deploy
+
+- **Railway (thử trước):** `railway init` tạo project `day14-production-agent`, `railway add --database redis` tạo Redis, `railway add --service agent`, rồi đặt biến bằng `railway variables --service agent --set AGENT_API_KEY=<random 48 hex> --set 'REDIS_URL=${{Redis.REDIS_URL}}' --set ENVIRONMENT=production ...` (key sinh ngẫu nhiên, chỉ lưu ở `.env` local đã gitignore). Bước `railway up` bị nền tảng chặn:
+  ```text
+  Indexing...
+  Uploading...
+  We limited this workspace after detecting unusual activity. Upgrade to a paid plan to lift this restriction automatically.
+  ```
+  Theo RULES.md (không nhập thẻ thanh toán), mình chuyển sang Render.
+- **Render (nền tảng chính):** Blueprint `06-lab-complete/render.yaml` gồm web service Docker `day14-agent` + Key Value (Redis) `day14-redis`; `REDIS_URL` lấy từ `fromService ... property: connectionString`, `AGENT_API_KEY` dùng `sync: false` (nhập trên dashboard). Kết quả: xem [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### So sánh `railway.toml` và `render.yaml`
+
+| Khía cạnh | `railway.toml` | `render.yaml` |
+|---|---|---|
+| Phạm vi | Config **một service** (build + deploy). Redis, biến môi trường tạo bằng CLI/dashboard | **Blueprint cả hạ tầng** (IaC): khai báo nhiều service (web + Key Value Redis) và cách nối với nhau trong một file |
+| Build | `[build] builder = "DOCKERFILE"`, `dockerfilePath` | `runtime: docker`, `dockerContext`, `dockerfilePath` (hoặc `runtime: python` + `buildCommand`) |
+| Health check | `healthcheckPath = "/health"`, `healthcheckTimeout` | `healthCheckPath: /health` |
+| Restart | `restartPolicyType = "ON_FAILURE"`, `restartPolicyMaxRetries` | Render tự restart, không cấu hình trong file |
+| Secret | Không nằm trong file; đặt bằng `railway variables --set` | Khai báo **tên** biến trong file: `sync: false` (nhập tay) hoặc `generateValue: true` (Render tự sinh); giá trị không nằm trong git |
+| Nối Redis | Tham chiếu biến giữa service: `REDIS_URL=${{Redis.REDIS_URL}}` (đặt qua CLI) | `fromService: {type: keyvalue, name: day14-redis, property: connectionString}` ngay trong file |
+| Port | Railway inject `PORT`, CMD đọc `${PORT:-8000}` | Render inject `PORT` (mặc định 10000), cùng CMD |
+| Khác | Region/plan chọn trên dashboard | `region: singapore`, `plan: free`, `buildFilter.paths` (chỉ build lại khi `06-lab-complete/**` đổi) |
+
+Vì sao khác: Railway coi file config là "cách build/chạy service này", còn hạ tầng xung quanh tạo bằng CLI. Render Blueprint là Infrastructure-as-Code: commit file là đủ để dựng lại toàn bộ stack (web + Redis + biến), dễ review và tái tạo hơn, nhưng file dài hơn và phải khai báo cả hạ tầng phụ trợ. Hai file đều được `check_production_ready.py` kiểm tra (builder + `healthcheckPath`; `type: web` + `healthCheckPath` + secret không ghi thẳng).
+
+### Exercise 3.3: CI/CD pipeline Cloud Run (`cloudbuild.yaml` + `service.yaml`)
+
+1. **Trigger:** push lên `main` kích hoạt Cloud Build chạy `cloudbuild.yaml` (timeout 20 phút, máy E2_MEDIUM).
+2. **`test`:** container `python:3.11-slim` cài requirements + pytest, chạy `pytest tests/`. Test fail thì pipeline dừng, không build.
+3. **`build` → `push`:** build Docker image gắn 2 tag `gcr.io/$PROJECT_ID/ai-agent:$COMMIT_SHA` và `:latest` (dùng `--cache-from :latest` để tận dụng layer cache), rồi push lên Container Registry.
+4. **`deploy`:** `gcloud run deploy ai-agent --image ...:$COMMIT_SHA` ở `asia-southeast1`, public, `min-instances=1` (tránh cold start), `max-instances=10`, 1 CPU / 512 Mi, timeout 60s, `OPENAI_API_KEY` lấy từ **Secret Manager** (`--set-secrets`), không nằm trong code.
+5. **`service.yaml`** mô tả cùng service dạng IaC (Knative): autoscaling 1–10 instance, `containerConcurrency: 80`, secret `AGENT_API_KEY`/`OPENAI_API_KEY` từ `secretKeyRef`, `livenessProbe` `/health` và `startupProbe` `/ready`; áp dụng bằng `gcloud run services replace service.yaml`. Deploy theo `$COMMIT_SHA` giúp rollback dễ: deploy lại SHA cũ.
 
 ---
 
@@ -371,3 +405,85 @@ history count = 8
 ```
 
 Mất 1 instance, traffic tự chuyển sang 2 instance còn lại, cả 4 lượt (8 message) vẫn còn trong history.
+
+---
+
+## Part 6: Final Project — `06-lab-complete/`
+
+### Cách làm từng tiêu chí
+
+| Tiêu chí | File | Cách làm |
+|---|---|---|
+| Config từ env | `app/config.py` | Dataclass `Settings`, mọi field dùng `os.getenv` (`PORT`, `ENVIRONMENT`, `LOG_LEVEL`, `AGENT_API_KEY`, `REDIS_URL`, `RATE_LIMIT_PER_MINUTE`, `DAILY_BUDGET_USD`, `MONTHLY_BUDGET_USD`). `AGENT_API_KEY` mặc định rỗng → fail closed (mọi `/ask` bị 401). `.env.example` liệt kê đủ biến |
+| Health / Ready | `app/main.py`, `app/redis_client.py` | `/health` luôn 200 (không đụng Redis). `/ready` gọi `redis_healthy()` (`PING`, timeout 2s) → 503 khi mất Redis. `redis.from_url()` không mở kết nối lúc import nên app khởi động được khi chưa có Redis |
+| API key | `app/auth.py` | `APIKeyHeader(name="X-API-Key", auto_error=False)` + so sánh `hmac.compare_digest` (chống timing attack); thiếu/sai → 401 |
+| Rate limit | `app/rate_limiter.py` | Sliding window 60s bằng Redis sorted set: `ZREMRANGEBYSCORE` + `ZCARD` (transaction) → vượt `RATE_LIMIT_PER_MINUTE` thì 429 + `Retry-After` (tính từ request cũ nhất); không thì `ZADD` + `EXPIRE`. Key Redis là hash SHA-256 của API key (không lưu key thô) |
+| Cost guard | `app/cost_guard.py` | `check_budget()` trước LLM (`MGET` key ngày + tháng, vượt → 402); `record_cost()` sau LLM (`INCRBYFLOAT` + `EXPIRE`). Chi tiết ở Exercise 4.4 |
+| Structured logging | `app/main.py` | `JsonFormatter` tự viết: `json.dumps` cả dòng (`ts`, `lvl`, `logger`, `msg` + field `extra`), middleware log mỗi request (`request_id`, `path`, `status`, `ms`), log `llm_call` có token/cost. Không log API key hay nội dung câu trả lời |
+| Xử lý lỗi | `app/main.py` | Exception handler cho `HTTPException` (JSON `{error, status}`), `RequestValidationError` (422 có field lỗi), `redis.RedisError` (503) và `Exception` (500 chung). Không trả stack trace ra client |
+| Graceful shutdown | `app/main.py`, `Dockerfile` | Không tự cài handler SIGTERM (uvicorn ghi đè, xem Part 5). Dùng `lifespan` để log shutdown + đóng Redis; uvicorn chờ request đang chạy xong. CMD `exec uvicorn ... --timeout-graceful-shutdown 8` → uvicorn là PID 1, tắt trong < 10s |
+| Docker | `Dockerfile`, `.dockerignore` | Multi-stage: builder cài deps vào venv `/opt/venv`; runtime `python:3.11-slim` chỉ copy venv + `app/` + `utils/`, user non-root `app` (uid 1001), `HEALTHCHECK` bằng Python (không cần curl). Image **273 MB**. `.dockerignore` loại `.env`, `__pycache__`, `venv`, `.git`, tài liệu, `benchmark-observability/` |
+| Compose | `docker-compose.yml` | `agent` (build `.`, `env_file .env required:false`, `REDIS_URL=redis://redis:6379/0`, `depends_on: redis: service_healthy`) + `redis:7-alpine` (healthcheck `redis-cli ping`, volume AOF) |
+| Deploy config | `railway.toml`, `render.yaml` | Railway: `builder = "DOCKERFILE"`, `healthcheckPath = "/health"`. Render: web Docker + Key Value, `healthCheckPath: /health`, `AGENT_API_KEY sync: false` |
+
+### Output `python check_production_ready.py` (đầy đủ, có Docker, chạy trong WSL2 — `os.name == "posix"`)
+
+```text
+✅ 1. Dockerfile (multi-stage, < 500 MB)
+     ✅ Multi-stage build (≥ 2 lệnh FROM)
+     ✅ Base image gọn (slim / alpine / distroless) — stage cuối dùng python:3.11-slim
+     ✅ Chạy bằng user non-root
+     ✅ Có HEALTHCHECK
+     ✅ Docker: build image thành công — 49s
+     ✅ Docker: image < 500 MB — 273 MB
+     ✅ Docker: container chạy được, GET /health → 200
+✅ 5. Readiness endpoint (GET /ready)
+     ✅ Khi chạy: Redis mất kết nối → /ready 503 (còn /health vẫn 200)
+✅ 7. Rate limiting
+     ✅ Khi chạy: vượt giới hạn → 429 — 429 sau 5 request thành công (RATE_LIMIT_PER_MINUTE=5)
+     ✅ Khi chạy: state nằm trong Redis — restart agent vẫn bị 429
+✅ 8. Cost guard
+     ✅ Khi chạy: hết budget → 402 — 402 ở request thứ 1
+✅ 10. Structured logging
+     ✅ Khi chạy: mọi dòng log của app là JSON hợp lệ — 17 dòng JSON
+✅ 11. Graceful shutdown
+     ✅ Khi chạy: SIGTERM lúc đang có request → request vẫn 200, process tự thoát — exit code 0
+     ✅ Docker: `docker stop` tắt êm (exit code 0, < 10s) — exit code 0, 1.5s
+
+================================================================
+  📋 Checklist Deliverable
+     ✅ Dockerfile (multi-stage, < 500 MB)
+     ✅ docker-compose.yml (agent + redis)
+     ✅ .dockerignore
+     ✅ Health check endpoint (GET /health)
+     ✅ Readiness endpoint (GET /ready)
+     ✅ API Key authentication
+     ✅ Rate limiting
+     ✅ Cost guard
+     ✅ Config từ environment variables
+     ✅ Structured logging
+     ✅ Graceful shutdown
+     ✅ Public URL ready (Railway / Render config)
+----------------------------------------------------------------
+  Result: 12/12 tiêu chí đạt · 43/43 checks passed
+  🎉 PASS 12/12 — PRODUCTION READY! Deploy nào!
+================================================================
+```
+
+---
+
+## AI log
+
+Bài làm có dùng **Claude Code (Claude Opus 5.5)** trong VS Code. Chi tiết:
+
+| # | Hỏi / yêu cầu | AI đã làm | Mình tự kiểm tra thế nào |
+|---|---|---|---|
+| 1 | Đọc README, CODE_LAB, RUBRIC, RULES, CHECKPOINTS và làm lần lượt từng phần | Tóm tắt yêu cầu K5 (WSL2, `-p` cho compose, deploy agent Part 6 ở CP6…); cài WSL Ubuntu 24.04, bật tích hợp WSL của Docker Desktop | `python -c "import os; print(os.name)"` → `posix`; `docker info` chạy được trong WSL |
+| 2 | Viết code Part 6 theo các TODO | Viết `config.py`, `auth.py`, `redis_client.py`, `rate_limiter.py`, `cost_guard.py`, `main.py`, Dockerfile multi-stage, compose, `.dockerignore`, `.env.example`, `railway.toml`, `render.yaml` | Chạy `check_production_ready.py` bản đầy đủ → PASS 12/12 (43/43); đọc lại từng file để giải thích được (bảng Part 6 ở trên); không sửa script chấm |
+| 3 | Chạy Part 1, 2, 4, 5 và lấy output | Viết script chạy app, curl các trường hợp, build image, compose với `-p`; che token JWT trước khi dán | Đối chiếu output (mã HTTP 401/403/200/429, số MB từ `docker image inspect`) với bài; tự phát hiện lỗi log JSON ở `01-.../production` (giải thích trong Part 1) |
+| 4 | Part 7: load test, eval, sửa `KNOWLEDGE_BASE` | Chạy load test 4 mức + 3 mức `MOCK_SLOW_RATE`, eval v1/v2; thêm 2 tài liệu (JWT, HPA) vào KB; viết metric `agent_question_length_chars` và job CI | Kiểm tra từ khoá mới chỉ khớp đúng 2 câu sai (không regression); eval cuối 23/23 exit 0; load test chạy lại khi máy rảnh (lần đầu bị tranh CPU với docker build) — số trong BENCHMARK_REPORT lấy từ file JSON cuối cùng |
+| 5 | Stack observability bị lỗi | Phát hiện container agent crash `No module named 'uvicorn'` → thêm `PYTHONUSERBASE`; phát hiện `docker compose run locust` tự bật lại 2 agent → thêm `--no-deps` | Ghi số container agent trước/sau mỗi lần đo (1 và 3) trong `reports/raw/p8_scale.log` |
+| 6 | Thí nghiệm alert + chụp ảnh | Script poll `/api/v1/alerts` đo thời gian pending/firing; tìm trace chậm/lỗi qua Jaeger API v3; chụp ảnh bằng Playwright (Chrome headless) | Mở từng ảnh kiểm tra (Grafana có dữ liệu, trace lỗi thấy event `exception`, Prometheus thấy 2 alert FIRING); log thô trong `reports/raw/` |
+| 7 | Deploy cloud | Tạo project/Redis/biến trên Railway bằng CLI (bị chặn bởi giới hạn workspace) → chuyển sang Render Blueprint | Chạy 4 lệnh tự kiểm CP6 trên URL public (xem DEPLOYMENT.md) |
+
+Không dùng AI để bịa số: mọi con số trong bài lấy từ output lệnh đã chạy và các file trong `reports/`, `benchmark-results/`, `screenshots/`.
