@@ -1,11 +1,15 @@
 # Render Blueprint — web service (Docker) + Redis (Key Value).
-# Render đọc file này khi tạo Blueprint, với rootDir trỏ vào 06-lab-complete.
+# Khi tạo Blueprint, đặt "Blueprint Path" = 06-lab-complete/render.yaml.
+# AGENT_API_KEY (sync: false) nhập trên dashboard; REDIS_URL lấy từ Key Value day14-redis.
 services:
   - type: web
     name: day14-agent
     runtime: docker
-    rootDir: 06-lab-complete
-    dockerfilePath: ./Dockerfile
+    dockerContext: ./06-lab-complete
+    dockerfilePath: ./06-lab-complete/Dockerfile
+    buildFilter:
+      paths:
+        - 06-lab-complete/**
     plan: free
     region: singapore
     healthCheckPath: /health
